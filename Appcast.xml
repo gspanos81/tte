@@ -3,16 +3,16 @@
     <channel>
         <title>Your App Name - Appcast</title>
         <item>
-            <title>Version 3.0.0</title>
+            <title>Version 1.0.0</title>
             <description>There is new Version only for you !</description>
             <pubDate>Tue, 08 Nov 2024 </pubDate>
-             <enclosure url="https://play.google.com/store/apps/details?id=com.sharxltd.sharx" sparkle:version="3.0.0" sparkle:os="android" />
+             <enclosure url="https://play.google.com/store/apps/details?id=com.sharxltd.sharx" sparkle:version="1.0.0" sparkle:os="android" />
         </item>
         <item>
-            <title>Version 3.0.0</title>
+            <title>Version 1.0.0</title>
             <description>desc</description>
             <pubDate>Tue, 08 Nov 2024 </pubDate>
-             <enclosure url="https://apps.apple.com/us/app/sharx/id6450862437" sparkle:version="3.0.0" sparkle:os="iOS" type="application/octet-stream" />
+             <enclosure url="https://apps.apple.com/us/app/sharx/id6450862437" sparkle:version="1.0.0" sparkle:os="iOS" type="application/octet-stream" />
         </item>
     </channel>
 </rss>
