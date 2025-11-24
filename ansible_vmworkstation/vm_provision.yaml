@@ -1,0 +1,106 @@
+---
+- name: Provision VM using direct vmrun commands (WSL to Windows Workstation)
+  # Target the Workstation host (localhost within the WSL environment)
+  hosts: localhost
+  connection: local
+  gather_facts: no
+  
+  # Load VM configuration variables
+  vars_files:
+    - vm_settings.yml
+  
+  # Manually map the top-level keys from the loaded YAML object for clarity
+  vars:
+    vm_name: "{{ vm_name }}"
+    vm_guest_os_type: "{{ vm_guest_os_type }}"
+    vm_memory_mb: "{{ vm_memory_mb }}"
+    vm_num_cpus: "{{ vm_num_cpus }}"
+    vm_disk_size_gb: "{{ vm_disk_size_gb }}"
+    vmrun_exe_path: "{{ vmrun_exe_path }}"
+    vm_directory: "{{ vm_directory }}"
+    vmx_path: "{{ vmx_path }}"
+    vm_iso_local_path: "{{ vm_iso_local_path }}"
+    vm_network_type: "{{ vm_network_type }}"
+    iso_path_windows_arg: "{{ iso_path_windows_arg }}" #| default('C:\\Users\\gspanos\\Downloads\\Fedora-Workstation-Live-43-1.6.x86_64.iso') }}"
+
+  tasks:
+
+    - name: remove the vms first
+      ansible.builtin.command:
+        cmd: "rm -rf /mnt/c/VMs/MyAnsibleVM/"
+      ignore_errors: no
+
+    - name: Validate required variables are defined
+      ansible.builtin.assert:
+        that:
+          - vm_name is defined
+          - vmx_path is defined
+          - vmrun_exe_path is defined
+        fail_msg: "Required VM configuration variables are missing. Ensure 'vm_settings.yml' is loaded and valid."
+
+    - name: Ensure target directory exists on Windows host (Using Linux mkdir -p on WSL path)
+      # 1. Replaces 'C:' with '/mnt/c'.
+      # 2. Ensures forward slashes (WSL standard).
+      # 3. Uses 'mkdir -p' to recursively create parent directories on the mounted Windows drive.
+      ansible.builtin.shell:
+        cmd: "mkdir -p \"{{ vm_directory | replace('C:', '/mnt/c') }}\""
+      register: dir_creation_result
+      changed_when: dir_creation_result.rc != 0
+      failed_when: dir_creation_result.rc != 0 and 'already exists' not in dir_creation_result.stderr
+      
+    - name: Check if VMX file already exists
+      ansible.builtin.stat:
+        path: "{{ vmx_path }}"
+      register: vmx_stat
+      delegate_to: localhost
+
+    # - name: Create Virtual Disk (VMDK) if VMX does not exist
+    #   ansible.builtin.command:
+    #     # **FIXED COMMAND**: Using the correct 'createdisk' command for vmrun.
+    #     # Format: createdisk <disk path> [monolithicFlat | monolithicSparse | twoGbMaxExtentFlat | twoGbMaxExtentSparse] [size]
+    #     cmd: "\"{{ vmrun_exe_path }}\" createdisk \"{{ vm_directory }}/{{ vm_name }}.vmdk\" twoGbMaxExtentSparse \"{{ vm_disk_size_gb }}Gb\""
+    #   when: not vmx_stat.stat.exists
+    #   register: disk_create_result
+
+    - name: Check if VMX file already exists
+      ansible.builtin.stat:
+        path: "{{ vmx_path | replace('C:', '/mnt/c') }}" # Check the VMX file existence using WSL path
+      register: vmx_stat
+      delegate_to: localhost
+
+    - name: Create Virtual Machine using vmrun create
+      ansible.builtin.command: 
+        # CRITICAL: Path to vmrun.exe is wrapped in quotes
+        cmd: "\"{{ vmrun_exe_path }}\" create \"{{ vmx_path }}\" \"{{ vm_guest_os_type }}\" -q"
+      when: not vmx_stat.stat.exists
+      register: vm_create_result
+      
+    - name: Configure VM Memory, CPU, Disk, and Network
+      # Using the shell module to run multiple vmrun commands sequentially
+      ansible.builtin.shell: |
+        # 1. Memory and CPU
+        "{{ vmrun_exe_path }}" writeVariable "{{ vmx_path }}" config vmmemctl.mb "{{ vm_memory_mb }}"
+        "{{ vmrun_exe_path }}" writeVariable "{{ vmx_path }}" config numvcpus "{{ vm_num_cpus }}"
+        
+        # 2. Attach Virtual Disk (using the file created in the previous step)
+        "{{ vmrun_exe_path }}" writeVariable "{{ vmx_path }}" config scsi0:0.fileName "{{ vm_name }}.vmdk"
+        "{{ vmrun_exe_path }}" writeVariable "{{ vmx_path }}" config scsi0:0.present "TRUE"
+
+        # 3. Configure Network Type and ISO Attachment
+        "{{ vmrun_exe_path }}" setSharedConfig "{{ vmx_path }}" ethernet0.connectionType "{{ vm_network_type }}"
+        "{{ vmrun_exe_path }}" writeVariable "{{ vmx_path }}" config ide1:0.present "TRUE"
+        "{{ vmrun_exe_path }}" writeVariable "{{ vmx_path }}" config ide1:0.fileName "{{ vm_iso_local_path }}"
+        "{{ vmrun_exe_path }}" writeVariable "{{ vmx_path }}" config ide1:0.deviceType "cdrom-image"
+        "{{ vmrun_exe_path }}" writeVariable "{{ vmx_path }}" config ide1:0.autodetect "FALSE"
+      when: vm_create_result.changed or (vmx_stat.stat.exists and vm_create_result is not defined)
+      register: vm_config_result
+
+    - name: Power on the VM to start OS installation
+      ansible.builtin.command: 
+        # CRITICAL: Path to vmrun.exe is wrapped in quotes
+        cmd: "\"{{ vmrun_exe_path }}\" start \"{{ vmx_path }}\" nogui"
+      register: vm_poweron_result
+
+    - name: Display completion status
+      ansible.builtin.debug:
+        msg: "VM '{{ vm_name }}' provisioning complete. Check VMware Workstation for status. Power on result: {{ vm_poweron_result.stdout | default('VM was already running or power-on command was skipped.') }}"

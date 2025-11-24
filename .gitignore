@@ -1,0 +1,21 @@
+# --- General Secrets and State Files ---
+
+# 1. Environment Variables (Critical to ignore)
+# Ignore all .env files, which contain credentials, keys, etc.
+.env
+
+# 2. Terraform State and Cache
+# Ignore the local Terraform state file and its backups
+**/*.tfstate
+**/*.tfstate.*
+.terraform/
+.terraform.lock.hcl
+
+# 3. Variable Definition Files (Potential for Secrets)
+# Ignore variable files that often contain secrets (like cloud credentials)
+**/*.tfvars
+-terraform.tfvars
+**/*.backup
+
+# 4. Crash Logs
+crash.log

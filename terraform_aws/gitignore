@@ -1,0 +1,6 @@
+# In your .gitignore file
+# Ignore all .env files (a standard best practice)
+.env
+
+# If the file is specifically inside a directory
+/home/gspanos/Terrathings/terraform_aws/.env

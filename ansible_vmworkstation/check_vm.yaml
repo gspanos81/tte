@@ -1,0 +1,43 @@
+---
+- name: check vms and there names 
+  hosts: vmworkstation
+  gather_facts: no
+  collections:
+      - qsypoq.vmware_desktop
+
+  tasks:
+  - name: List VMs
+    qsypoq.vmware_desktop.unix_vmware_desktop_vminfos:
+      # The module expects the workstation API url and credentials.
+      username: "{{ ansible_user }}"
+      password: "{{ ansible_password }}"
+      # Point api_url at the VMware Workstation host (use ansible_host from inventory)
+      api_url: "http://{{ ansible_host }}"
+      # api_port defaults to 8697; uncomment/change if your API runs on a different port
+      # api_port: "8697"
+      validate_certs: no
+    register: vm_info
+
+
+  - name: "Retrieve CPU & RAM from VM with ID 42"
+    unix_vmware_desktop_vminfos:
+      target_vm: "{{ item.id }}"
+      username: "{{ ansible_user }}"
+      restrictions: True
+      password: "{{ ansible_password }}"
+      api_url: "http://{{ ansible_host }}"
+      validate_certs: no
+    loop: "{{ vm_info.msg }}"
+    when: vm_info.msg | length > 0
+    register: specific_vm_info
+
+  - name: Show specific VM info
+    debug:
+      var: specific_vm_info
+    # - name: Show raw VM info (inspect structure)
+    #   debug:
+    #   var: vm_info
+  # - name: Show VM entries (inspect fields)
+  #   debug:
+  #     var: item.path
+  #   loop: "{{ vm_info.msg | default([]) }}"

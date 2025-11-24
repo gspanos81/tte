@@ -1,0 +1,38 @@
+---
+    # Use Windows-style path for the ovf_directory for the ovftool output
+    ovf_directory_win: "C:\\VMs\\AnsibleOVF" 
+    # Use Linux-style path for the stat check (since the command runs on localhost/WSL)
+    ovf_directory_linux: "/mnt/c/VMs/AnsibleOVF"
+    
+    ovf_name: "MyAnsibleVM.ovf"
+    ovf_path_linux: "{{ ovf_directory_linux }}/{{ ovf_name }}"
+    ovf_path_win: "{{ ovf_directory_win }}\\{{ ovf_name }}" # Used for the ovftool destination
+    vmrun_wsl_path: "/mnt/c/Program Files (x86)/VMware/VMware Workstation/vmrun.exe"
+    vdiskmanager_wsl_path: "/mnt/c/Program Files (x86)/VMware/VMware Workstation/vmware-vdiskmanager.exe"
+    vm_directory_wsl: "/mnt/c/VMs/MyAnsibleVM"
+    vm_directory_windows_arg: "C:\\VMs\\MyAnsibleVM"
+    vmdk_full_path_windows_arg: "C:\\VMs\\MyAnsibleVM\\MyAnsibleVM.vmdk"
+    
+    # VM details (FIXED: Added vm_cores_per_socket)
+    vm_name: "MyAnsibleVM"
+    vm_ram_mb: 4096
+    vm_disk_size_gb: 20
+    vm_cpus: 2
+    vm_cores_per_socket: 1 # <--- THIS LINE WAS MISSING AND CAUSED THE ERROR
+    guest_os_type: "ubuntu-64"
+    network_type: "nat"
+    iso_path_windows_arg: "C:\\Users\\gspanos\\Downloads\\Fedora-Workstation-Live-43-1.6.x86_64.iso"
+        # Use Windows-style path for the ovf_directory for the ovftool output
+    ovf_directory_win: "C:\\VMs\\AnsibleOVF" 
+    # Use Linux-style path for the stat check (since the command runs on localhost/WSL)
+    ovf_directory_linux: "/mnt/c/VMs/AnsibleOVF"
+    
+    # 🌟 CHANGE 1: Change file extension to .ova
+    ovf_name: "MyAnsibleVM.ova" 
+    source_ova_path: 'C:\VMs\AnsibleOVF\MyAnsibleVM.ova' 
+    ovf_path_linux: "{{ ovf_directory_linux }}/{{ ovf_name }}"
+    ovf_path_win: "{{ ovf_directory_win }}\\{{ ovf_name }}" # Used for the ovftool destination
+    ovftool_path: '/mnt/c/Program Files (x86)/VMware/VMware Workstation/ovftool/ovftool.exe'
+    vmx_source_path: 'C:\VMs\MyAnsibleVM\MyAnsibleVM.vmx'
+        # Crucial: This variable now ends in .ova, triggering single-file output
+    ovf_destination_path: "{{ ovf_path_win }}" 
