@@ -1,0 +1,61 @@
+---
+- name: Fully Automated VM Creation (Template + Disk Manager)
+  hosts: localhost # Target your Windows machine (via WSL loopback)
+  gather_facts: no
+
+  vars:
+    # 1. Path to executables (WSL path for Ansible to find the .exe)
+    vmrun_wsl_path: "/mnt/c/Program Files (x86)/VMware/VMware Workstation/vmrun.exe"
+    vdiskmanager_wsl_path: "/mnt/c/Program Files (x86)/VMware/VMware Workstation/vmware-vdiskmanager.exe"
+    
+    # 2. Base directory (WSL path for Ansible file operations)
+    vm_directory_wsl: "/mnt/c/VMs/MyAnsibleVM"
+    
+    # 3. Arguments for executables (MUST use Windows Path format: C:\...)
+    vm_directory_windows_arg: "C:\\VMs\\MyAnsibleVM"
+    vmdk_full_path_windows_arg: "C:\\VMs\\MyAnsibleVM\\MyAnsibleVM.vmdk"
+    
+    # VM details (FIXED: Added vm_cores_per_socket)
+    vm_name: "MyAnsibleVM"
+    vm_ram_mb: 4096
+    vm_disk_size_gb: 20
+    vm_cpus: 2
+    vm_cores_per_socket: 1 # <--- THIS LINE WAS MISSING AND CAUSED THE ERROR
+    guest_os_type: "ubuntu-64"
+    network_type: "nat"
+    iso_path_windows_arg: "C:\\Users\\gspanos\\Downloads\\Fedora-Workstation-Live-43-1.6.x86_64.iso"
+
+  tasks:
+    - name: remove the vms first
+      ansible.builtin.command:
+        cmd: "rm -rf /mnt/c/VMs/MyAnsibleVM/"
+      ignore_errors: no
+
+    - name: 1. Ensure the VM directory exists on the Windows host (Uses WSL path)
+      # Using ansible.builtin.file is okay here as it uses Linux/WSL APIs which understand /mnt/c/
+      ansible.builtin.file:
+        path: "{{ vm_directory_wsl }}"
+        state: directory
+        
+    - name: 2. Create the Virtual Disk (.vmdk)
+      # We must pass the Windows path to the Windows executable.
+      ansible.builtin.shell:
+        cmd: >
+          "{{ vdiskmanager_wsl_path }}" -c 
+          -s {{ vm_disk_size_gb }}GB 
+          -a lsilogic 
+          -t 0 
+          "{{ vmdk_full_path_windows_arg }}" # <-- **CRITICAL FIX: PASSING WINDOWS PATH**
+      
+    - name: 3. Generate the VMX file from template (Uses WSL path for destination)
+      # Ansible's template module uses WSL paths for dest successfully.
+      ansible.builtin.template:
+        src: myvm.vmx.j2
+        dest: "{{ vm_directory_wsl }}/{{ vm_name }}.vmx"
+      
+    - name: 4. Power on the VM using the 'start' command
+      # We must pass the Windows path to the Windows executable (vmrun.exe).
+      ansible.builtin.shell:
+        cmd: >
+          "{{ vmrun_wsl_path }}" start 
+          "{{ vm_directory_windows_arg }}\\{{ vm_name }}.vmx" nogui

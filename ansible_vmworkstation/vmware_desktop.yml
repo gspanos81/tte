@@ -1,0 +1,5 @@
+plugin: 'qsypoq.vmware_desktop.inventory'
+url: 'your_api_ip'
+port: 'you_api_port'
+user: 'your_api_user'
+password: 'your_api_password'

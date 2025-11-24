@@ -1,0 +1,32 @@
+.encoding = "UTF-8"
+config.version = "8"
+virtualHW.version = "17"
+pciBridge0.present = "TRUE"
+
+# --- VM Name ---
+displayName = "{{ vm_name }}"
+guestOS = "{{ guest_os_type }}"
+nvram = "{{ vm_name }}.nvram"
+
+# --- Hardware ---
+memsize = "{{ vm_ram_mb }}"
+numvcpus = "{{ vm_cpus }}"
+coresPerSocket = "{{ vm_cores_per_socket }}"
+
+# --- Hard Disk ---
+scsi0.present = "TRUE"
+scsi0.virtualDev = "lsilogic"
+scsi0:0.present = "TRUE"
+scsi0:0.fileName = "{{ vm_name }}.vmdk"
+scsi0:0.deviceType = "scsi-hardDisk"
+
+# --- Network ---
+ethernet0.present = "TRUE"
+ethernet0.connectionType = "{{ network_type }}"
+ethernet0.virtualDev = "e1000"
+
+# --- CD/DVD Drive (for OS Installation) ---
+ide1:0.present = "TRUE"
+ide1:0.fileName = "{{ iso_path_windows_arg }}"  # <--- Use the Windows path argument for the ISO
+ide1:0.deviceType = "cdrom-image"
+ide1:0.startConnected = "TRUE"

@@ -1,0 +1,18 @@
+#we have the backends
+what backend does, is to save the state of the terraform project-file
+you can have different backends : 
+- local 
+- terraform 
+- 3rd parties cloud (aws,s3)
+
+you can use the state of an external file using the cli : 
+#terraform init -backend-config=region=eu-west-1 -migrate-state#
+#terraform init -backend-config="a-file_somewhere" -migrate-state#
+
+in order to save the state in s3 aws for example, you need to add a block of commands inside the providers section : 
+    backend "s3" {
+        bucket_name = blcokfo_caspws_awps
+        region = "es-west-1"
+        path = 'anypathiwant'
+
+    }

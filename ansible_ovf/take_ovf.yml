@@ -1,0 +1,50 @@
+---
+- name: Create OVA from Ansible VM using stat to check if OVA exists first 
+  hosts: localhost
+  gather_facts: no
+
+  vars:
+    # Use Windows-style path for the ovf_directory for the ovftool output
+    ovf_directory_win: "C:\\VMs\\AnsibleOVF" 
+    # Use Linux-style path for the stat check (since the command runs on localhost/WSL)
+    ovf_directory_linux: "/mnt/c/VMs/AnsibleOVF"
+    
+    # 🌟 CHANGE 1: Change file extension to .ova
+    ovf_name: "MyAnsibleVM.ova" 
+    
+    ovf_path_linux: "{{ ovf_directory_linux }}/{{ ovf_name }}"
+    ovf_path_win: "{{ ovf_directory_win }}\\{{ ovf_name }}" # Used for the ovftool destination
+
+  tasks:
+    # Task 1: Ensure directory exists (no change needed)
+    - name: 1. Ensure the OVF output directory exists (using Linux path)
+      ansible.builtin.file:
+        path: "{{ ovf_directory_linux }}"
+        state: directory
+
+    # Task 2: Check for OVA file existence (path variable now points to .ova)
+    - name: 2. Check if the OVA file already exists
+      ansible.builtin.stat:
+        path: "{{ ovf_path_linux }}"
+      register: ovf_file_stat
+
+    # Task 3: Create the OVA file if it does not exist
+    - name: 3. Create the OVA file using ovftool.exe if it DOES NOT exist
+      ansible.builtin.shell: |
+        "{{ ovftool_path }}" --overwrite "{{ vmx_source_path }}" "{{ ovf_destination_path }}"
+      vars:
+        ovftool_path: '/mnt/c/Program Files (x86)/VMware/VMware Workstation/ovftool/ovftool.exe'
+        vmx_source_path: 'C:\VMs\MyAnsibleVM\MyAnsibleVM.vmx'
+        # Crucial: This variable now ends in .ova, triggering single-file output
+        ovf_destination_path: "{{ ovf_path_win }}" 
+      when: not ovf_file_stat.stat.exists
+
+    # Task 4: Debug the result (updated message)
+    - name: 4. Debug the result
+      ansible.builtin.debug:
+        msg: |
+          {% if ovf_file_stat.stat.exists %}
+          OVA file already existed, skipping export.
+          {% else %}
+          Export command was run (check previous task for success). OVA is at {{ ovf_path_win }}
+          {% endif %}

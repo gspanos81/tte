@@ -1,0 +1,22 @@
+- name: Fully Automated OVA Deployment back in the Workstation
+  hosts: localhost
+  gather_facts: no
+
+  vars:
+    ovf_tool_path: "/mnt/c/Program Files (x86)/VMware/VMware Workstation/ovftool/ovftool.exe"
+    ovf_source_path: "/mnt/c/VMs/AnsibleOVF/MyAnsibleVM.ova"
+    vm_destination_path: "/mnt/c/VMs/DeployedVMs/DeployedVM.vmx"
+    vm_name: "DeployedVM"
+    vm_network_type: "nat"
+
+  tasks:
+    - name: Ensure the destination directory exists
+      ansible.builtin.file:
+        path: "/mnt/c/VMs/AnsibleOVF"
+        state: directory
+
+- name: Deploy OVA to VMware Workstation using Linux OVF Tool in WSL
+  ansible.builtin.shell: |
+    "{{ovf_tool_path}}" --name "{{ vm_name }}" --net:"{{ vm_network_type }}" --overwrite "{{ ovf_source_path }}" "{{ vm_destination_path }}"
+  register: ovf_deploy_result
+  failed_when: ovf_deploy_result.rc != 0

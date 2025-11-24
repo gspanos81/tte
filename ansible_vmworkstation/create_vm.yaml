@@ -1,0 +1,23 @@
+---
+- name: Create a VM via local module
+  hosts: localhost
+  gather_facts: no
+  tasks:
+    - name: Create VM (POST to vmrest)
+      create_vm:
+        username: "{{ ansible_user | default('admin') }}"
+        password: "{{ ansible_password | default('StoPara5%') }}"
+        api_url: "http://{{ lookup('env','ANSIBLE_VMREST_HOST') | default('172.19.224.1') }}"
+        api_port: "8697"
+        name: "my-new-vm"
+        display_name: "My New VM"
+        processors: 2
+        memory_mb: 2048
+        disk_gb: 20
+        iso_path: "C:\\isos\\installer.iso"
+        vmx_dir: "C:\\VirtualMachines\\my-new-vm"
+        vmx_filename: "my-new-vm.vmx"
+      register: create_res
+
+    - debug:
+        var: create_res

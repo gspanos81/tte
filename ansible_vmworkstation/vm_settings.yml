@@ -1,0 +1,17 @@
+# --- VMWare Workstation Connection Settings ---
+vmrun_exe_path: "/mnt/c/Program Files (x86)/VMware/VMware Workstation/vmrun.exe" 
+
+# --- Virtual Machine Definition ---
+vm_name: AnsibleProvisionedVM
+vm_directory: /mnt/c/Users/Public/Documents/Shared VMs/{{ vm_name }}
+vmx_path: "{{ vm_directory }}/{{ vm_name }}.vmx"
+
+# CRITICAL: This must be the absolute Windows path to your OS ISO file.
+vm_iso_local_path: C:/ISOs/Ubuntu-22.04-Desktop.iso
+iso_path_windows_arg: "C:\\Users\\gspanos\\Downloads\\Fedora-Workstation-Live-43-1.6.x86_64.iso"
+# --- Hardware and Network Settings ---
+vm_guest_os_type: ubuntu-64 # Use the vmrun format (e.g., windows7, windows9Server64, rhel, other)
+vm_memory_mb: 2048          # 2 GB RAM
+vm_num_cpus: 2              # 2 CPU Cores
+vm_disk_size_gb: 30         # 30 GB disk size
+vm_network_type: nat        # Options: nat, bridged, hostonly
