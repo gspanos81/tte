@@ -1,0 +1,50 @@
+---
+- name: Get Service Executable Paths Only
+  hosts: localhost
+  #become: true
+  gather_facts: false
+
+  vars:
+    # Regex to find HAProxy, HAPEE, or any Network services
+    service_regex: "^(haproxy|hapee-.*-lb|.*network.*)\\.service$"
+
+  tasks:
+    # -------------------------------------------------------------------------
+    # 1. Discovery: Find the actual service names on this host
+    # -------------------------------------------------------------------------
+    - name: Find services matching regex
+      ansible.builtin.shell: |
+        systemctl list-unit-files --type=service --no-pager --no-legend | awk '{print $1}' | grep -E '{{ service_regex }}' || true
+      register: found_services
+      changed_when: false
+
+    # -------------------------------------------------------------------------
+    # 2. Extraction: Get the raw ExecStart string from systemd
+    # -------------------------------------------------------------------------
+    - name: Get raw ExecStart path from systemd
+      ansible.builtin.command: systemctl show {{ item }} -p ExecStart --value
+      loop: "{{ found_services.stdout_lines }}"
+      register: raw_paths
+      changed_when: false
+      ignore_errors: true
+      when: found_services.stdout_lines | length > 0
+
+    # -------------------------------------------------------------------------
+    # 3. Cleaning: Strip flags/args to get just the binary path
+    # -------------------------------------------------------------------------
+    - name: Display Cleaned Executable Paths
+      ansible.builtin.debug:
+        msg:
+          - "Service:    {{ item.item }}"
+          - "Raw Line:   {{ item.stdout }}"
+          - "Executable: {{ cleaned_path }}"
+      vars:
+        # 1. regex_replace('^[!-]*', ''): Removes leading '-' or '!' (systemd ignore flags)
+        # 2. split(' ') | first: Takes only the first word (the binary), ignoring arguments
+        cleaned_path: "{{ item.stdout | regex_replace('^[!-]*', '') | split(' ') | first }}"
+      loop: "{{ raw_paths.results }}"
+      when: 
+        - raw_paths.results is defined
+        - item.stdout | length > 0
+      loop_control:
+        label: "{{ item.item }}"
